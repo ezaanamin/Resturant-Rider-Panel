@@ -44,7 +44,7 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(bodyParser.json());
 app.use('/upload',express.static('upload'))
-
+const { ObjectId } = mongoose.Types;
 
 app.use(helmet())
 app.use(helmet.crossOriginResourcePolicy({policy:"cross-origin"}))
@@ -89,29 +89,49 @@ app.use('/payment',PaymentRoutes)
 // transaction.create(data1)
 // Orders.create(data1)
 
-const io=new Server(server,{
-
-
-  cors:{
-      origin:"http://192.168.7.133:8000/",
-      methods:["GET","POST"]
+const io = new Server(server, {
+  cors: {
+    origin: process.env.BASE_URL, 
+    methods: ["GET", "POST"]
   }
-})
+});
 
-io.on("connection",(socket)=>{
+io.on("connection", (socket) => {
+  console.log("User Connected", socket.id);
 
-  console.log("User Connected",socket.id);
+  socket.on("disconnect", () => {
+    console.log("User disconnected", socket.id);
+  });
+});
+
+// const pipeline = [
+//   {
+//     $match: {
+//       rider:  new mongoose.Types.ObjectId("65ec647ff92bff0309a05a1c")
+//     },
+//   },
+// ];
 
 
-    
 
 
+const changeStream = Orders.watch();
+changeStream.on('change', async (data) => {
+  try {
+    const fullDocument = await Orders.findOne({ _id: data.documentKey._id });
+    if (fullDocument && fullDocument.rider.equals('65ec647ff92bff0309a05a1c')) {
+      Orders.findById(data.documentKey._id).then((doc) => {
+        if (doc) {
+          console.log(doc);
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error retrieving full document:', error);
+  }
+});
 
-socket.on("disconnect",()=>{
-console.log("user disconnected",socket.id)
 
-})
-})
 const PORT = process.env.PORT || 9000;
 mongoose.set("strictQuery", false);
 mongoose
@@ -122,3 +142,4 @@ mongoose
   })
   .catch((err) => console.error('MongoDB connection error:', err));
  
+  export { io }; 

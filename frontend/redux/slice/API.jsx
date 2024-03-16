@@ -43,6 +43,29 @@ export const RiderInformation = createAsyncThunk(
   }
 );
 
+export const NewOrdersDisplay = createAsyncThunk(
+  'post/NewOrdersDisplay',
+  async ({ rejectWithValue, token }) => {
+    try {
+      const response = await axios.post(`${BASE_URL}riders/new_orders`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      if (!error.response) {
+        // Network error or other non-HTTP error occurred
+        throw error;
+      }
+      
+      // Handle HTTP errors (e.g., 4xx, 5xx)
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+
 
 export const APISlice = createSlice({
   name: 'API',
@@ -72,6 +95,19 @@ export const APISlice = createSlice({
         state.error = null;
       })
       .addCase(RiderInformation.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      builder
+      .addCase(NewOrdersDisplay.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(NewOrdersDisplay.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.data = action.payload;
+        state.error = null;
+      })
+      .addCase(NewOrdersDisplay.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
       });

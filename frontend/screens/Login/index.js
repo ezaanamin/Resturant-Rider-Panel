@@ -39,7 +39,7 @@ function Login({ navigation }) {
               'authToken',
               action.payload.token
             );
-            console.log("Token stored successfully.");
+            // console.log("Token stored successfully.");
             navigation.navigate('Home');
           } catch (error) {
             Alert.alert("Error", "Failed to store token.");
