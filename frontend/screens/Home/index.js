@@ -31,7 +31,7 @@ function Home({ navigation }) {
         const token = await SecureStore.getItemAsync('authToken');
         const promise = await dispatch(NewOrdersDisplay({ token }));
         if (promise) {
-          console.log(promise.payload);
+          // console.log(promise.payload,'ezaan amin');
         }
       } catch (error) {
         console.error('Error retrieving token:', error);

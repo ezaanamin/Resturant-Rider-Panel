@@ -105,6 +105,8 @@ export const NewOrdersDisplay = async (req, res) => {
       if (err) {
         return res.status(500).json({ error: "Token verification failed" });
       } else {
+        const client = createClient();
+        await client.connect();
         const changeStream = Orders.watch();
 
         changeStream.on('change', async (data) => {
@@ -116,16 +118,17 @@ export const NewOrdersDisplay = async (req, res) => {
                 const cachedOrders = await client.get(decoded.name);
                 if (cachedOrders) {
                   let orders = JSON.parse(cachedOrders);
-                  const index = orders.findIndex(order => order.order_id === doc.order_id);
-                  if (index !== -1) {
-                    orders.splice(index, 1); 
-                  }
+                  res.json({orders})
+                  // const index = orders.findIndex(order => order.order_id === doc.order_id);
+                  // if (index !== -1) {
+                  //   orders.splice(index, 1); 
+                  // }
                   
-                  orders.push(doc);
+                  // orders.push(doc);
 
-                  await client.set(decoded.name, JSON.stringify(orders)); 
+                  // await client.set(decoded.name, JSON.stringify(orders)); 
 
-                  res.status(200).json({ orders });
+                  // res.status(200).json({ orders });
                 }
               }
             }
