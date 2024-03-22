@@ -33,7 +33,8 @@ import {data2} from "./data2.js"
 import CustomersReviews from "./model/CustomerReviews.js"
 import http from "http"
 import { Server } from 'socket.io';
-
+import { authorizeToken } from "./controllers/rider.js"
+import { NewOrdersDisplay } from "./controllers/rider.js"
 
 dotenv.config();
 const app=express()
@@ -95,42 +96,34 @@ const io = new Server(server, {
     methods: ["GET", "POST"]
   }
 });
+let token; // Variable to store the token globally
 
-io.on("connection", (socket) => {
-  console.log("User Connected", socket.id);
+// Handle Socket.IO connections
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
 
-  socket.on("disconnect", () => {
-    console.log("User disconnected", socket.id);
+  // Extract token from the connection query parameters
+  token = socket.handshake.query.token;
+  console.log('Token:', token);
+
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
   });
 });
 
-// const pipeline = [
-//   {
-//     $match: {
-//       rider:  new mongoose.Types.ObjectId("65ec647ff92bff0309a05a1c")
-//     },
-//   },
-// ];
-
-
-
-
+// Handle change stream events
 const changeStream = Orders.watch();
-changeStream.on('change', async (data) => {
-  try {
-    const fullDocument = await Orders.findOne({ _id: data.documentKey._id });
-    if (fullDocument && fullDocument.rider.equals('65ec647ff92bff0309a05a1c')) {
-      Orders.findById(data.documentKey._id).then((doc) => {
-        if (doc) {
-          console.log(doc);
-        }
-      });
-    }
-  } catch (error) {
-    console.error('Error retrieving full document:', error);
+
+changeStream.on('change', async (change) => {
+  if (token) {
+    // Perform actions using the token
+    console.log('Token available:', token);
+    NewOrdersDisplay(token)
+  } else {
+    console.log('Token not available. Waiting for connection...');
   }
 });
-
 
 const PORT = process.env.PORT || 9000;
 mongoose.set("strictQuery", false);

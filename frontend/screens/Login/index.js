@@ -8,6 +8,7 @@ import { useFormik } from "formik";
 import { LoginRider } from '../../redux/slice/API';
 import { useDispatch } from 'react-redux';
 import * as SecureStore from 'expo-secure-store';
+import { useEffect } from 'react';
 function Login({ navigation }) {
   const dispatch = useDispatch();
 
@@ -51,6 +52,18 @@ function Login({ navigation }) {
     }
   });
 
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     console.log('This will run after 1 second!');
+  //     useEffectCallback();
+  //   }, 1000);
+
+  //   // No cleanup function is returned, so the effect runs indefinitely
+  // }, []); 
+  //   const useEffectCallback = () => {
+  //   // Code to execute after the 1-second delay
+  //   console.log('useEffectCallback called!');
+  // };
   return (
     <View style={styles.container}>
       <LinearGradient

@@ -4,6 +4,26 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import { createClient } from 'redis';
 import { io } from "../index.js";
+export async function authorizeToken(authorizationHeader) {
+  if (!authorizationHeader) {
+    throw new Error('Not authorized');
+  }
+
+  const token = authorizationHeader.split(' ')[1].replace(/"/g, '');
+  const token_key = process.env.TOKEN_KEY;
+
+  return new Promise((resolve, reject) => {
+    jwt.verify(token, token_key, (err, decoded) => {
+      if (err) {
+        reject(new Error('Token verification failed'));
+      } else {
+        resolve(decoded.id);
+      }
+    });
+  });
+}
+
+
 export const GetRiders = async (req, res) => {
   Rider.find({}).then(function (doc) {
     if (!doc) {
@@ -90,57 +110,83 @@ export const RiderInformation = async (req, res) => {
   }
 };
 
-export const NewOrdersDisplay = async (req, res) => {
 
-  try {
-    const authorizationHeader = req.headers['authorization'];
-    if (!authorizationHeader) {
-      return res.status(401).send('Not authorized');
-    }
+async function monitorNewOrder(userId) {
+  const client = createClient();
+  await client.connect();
+  const changeStream = Orders.watch();
 
-    const token = authorizationHeader.split(' ')[1].replace(/"/g, '');
-    const token_key = process.env.TOKEN_KEY;
 
-    jwt.verify(token, token_key, async (err, decoded) => {
-      if (err) {
-        return res.status(500).json({ error: "Token verification failed" });
-      } else {
-        const client = createClient();
-        await client.connect();
-        const changeStream = Orders.watch();
-
-        changeStream.on('change', async (data) => {
-          try {
-            const fullDocument = await Orders.findOne({ _id: data.documentKey._id });
-            if (fullDocument && fullDocument.rider.equals(decoded.user_id)) {
-              const doc = await Orders.findById(data.documentKey._id);
-              if (doc) {
-                const cachedOrders = await client.get(decoded.name);
-                if (cachedOrders) {
-                  let orders = JSON.parse(cachedOrders);
-                  res.json({orders})
-                  // const index = orders.findIndex(order => order.order_id === doc.order_id);
-                  // if (index !== -1) {
-                  //   orders.splice(index, 1); 
-                  // }
-                  
-                  // orders.push(doc);
-
-                  // await client.set(decoded.name, JSON.stringify(orders)); 
-
-                  // res.status(200).json({ orders });
-                }
-              }
-            }
-          } catch (error) {
-            console.error('Error retrieving full document:', error);
+    changeStream.on('change', async (data) => {
+      try {
+        if (data.fullDocument && data.fullDocument.rider.equals(userId)) {
+          const doc = await Orders.findById(data.documentKey._id);
+          if (doc) {
+           return doc;
           }
-        });
+        }
+      } catch (error) {
+        reject(error);
       }
     });
+
+}
+
+
+
+export const NewOrdersDisplay = async (token) => {
+
+  console.log("NewOrdersDisplay function called");
+  try {
+    const userId = await authorizeToken(token); // Call authorizeToken function with authorization header from request
+
+    if (userId) {
+      try {
+        const fullDocument = await Orders.findOne({ _id: data.documentKey._id });
+        if (fullDocument && fullDocument.rider.equals(userId)) { // Assuming userId is the ID extracted from the token
+          Orders.findById(data.documentKey._id).then((doc) => {
+            if (doc) {
+              // console.log(doc);
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error retrieving full document:', error);
+      }
+      // res.json(doc);
+    } else {
+      console.log("not login")
+    }
   } catch (error) {
     console.error('Error in NewOrdersDisplay:', error);
-    // Send appropriate error response back to the client
-    // res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
-};
+}
+
+// changeStream.on('change', async (data) => {
+//   try {
+//     const fullDocument = await Orders.findOne({ _id: data.documentKey._id });
+//     if (fullDocument && fullDocument.rider.equals(decoded.user_id)) {
+//       const doc = await Orders.findById(data.documentKey._id);
+//       if (doc) {
+//         const cachedOrders = await client.get(decoded.name);
+//         if (cachedOrders) {
+//           let orders = JSON.parse(cachedOrders);
+//           res.json({orders})
+//           // const index = orders.findIndex(order => order.order_id === doc.order_id);
+//           // if (index !== -1) {
+//           //   orders.splice(index, 1); 
+//           // }
+          
+//           // orders.push(doc);
+
+//           // await client.set(decoded.name, JSON.stringify(orders)); 
+
+//           // res.status(200).json({ orders });
+//         }
+//       }
+//     }
+//   } catch (error) {
+//     console.error('Error retrieving full document:', error);
+//   }
+// });

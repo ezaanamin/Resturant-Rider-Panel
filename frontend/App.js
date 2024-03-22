@@ -9,19 +9,12 @@ import { store } from "./redux/store"
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import Home from './screens/Home';
-import io from "socket.io-client"
-import { BASE_URL } from '@env';
+
 
 export default function App() {
-  const socket=io.connect(`${BASE_URL}`);
-
-  socket.on('connection', data => {
 
 
-    // console.log(data)
- 
-
-  });
+  
   const Stack = createStackNavigator();
 
   return (

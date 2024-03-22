@@ -6,6 +6,5 @@ const router=express.Router();
 router.get("/",GetRiders)
 router.post('/login',LoginRider)
 router.post('/information',RiderInformation)
-router.post('/new_orders',NewOrdersDisplay)
 
 export default router;
