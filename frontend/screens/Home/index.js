@@ -1,35 +1,35 @@
 import React, { useEffect } from 'react';
-import { View, Text, Image, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Image, TextInput, TouchableOpacity, Alert,Button } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useDispatch } from 'react-redux'; // Changed to useDispatch
 import { RiderInformation, NewOrdersDisplay } from '../../redux/slice/API';
 import io from "socket.io-client"
 import { BASE_URL } from '@env';
-
+import { useState } from 'react';
 function Home({ navigation }) {
   const dispatch = useDispatch(); // Changed UseDispatch to useDispatch
-
+  const [socket, setSocket] = useState(null); // State to hold the socket instance
+  const [new_order,SetNewOrder]=useState(false);
   useEffect(() => {
     const getTokenAndFetchOrders = async () => {
       try {
-        // Retrieve the token from SecureStore
         const token = await SecureStore.getItemAsync('authToken');
 
-        const socket = io.connect(BASE_URL, {
+        const newsocket = io.connect(BASE_URL, {
           query: {
             token: token
           }
         });
         
-        socket.on('connect', () => {
+        newsocket.on('connect', () => {
           console.log('Connected to server with token:', token);
         });
-        
-        socket.on('connection', data => {
-          // Handle connection event if needed
+        setSocket(newsocket)
+        newsocket.on('connection', data => {
+      
         });
 
-        // Dispatch the action to fetch new orders
+       
         await dispatch(RiderInformation({ token }));
       } catch (error) {
         console.error('Error retrieving token:', error);
@@ -39,9 +39,48 @@ function Home({ navigation }) {
     getTokenAndFetchOrders();
   }, [dispatch]);
 
+
+  useEffect(() => {
+    if(socket)
+    {
+        socket.on("new_order", (data) => {
+      console.log(dat,'new_order')
+      SetNewOrder(true)
+    });
+    }
+  
+  }, [socket]);
+
+// const showAlert = (order) =>
+// Alert.alert(
+//   'Order Number 3',
+//   'Name: ezaan',
+//   'Address:',
+
+//   [
+//     {
+//       text: 'Cancel',
+//       onPress: () => Alert.alert('Cancel Pressed'),
+//       style: 'cancel',
+//     },
+//     {
+//       text: 'hiiii',
+//       onPress: () => Alert.alert('Cancel Pressed'),
+//       style: 'cancel',
+//     },
+//   ],
+  
+//   {
+//     cancelable: true,
+//     onDismiss: () =>
+//       Alert.alert(
+//         'This alert was dismissed by tapping outside of the alert dialog.',
+//       ),
+//   },
+// );
   return (
     <View>
-      {/* Your JSX content */}
+    {/* <Button title="Show alert" onPress={() => showAlert(3)} /> */}
     </View>
   );
 }

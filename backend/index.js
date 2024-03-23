@@ -104,7 +104,7 @@ io.on('connection', (socket) => {
 
   // Extract token from the connection query parameters
   token = socket.handshake.query.token;
-  console.log('Token:', token);
+  // console.log('Token:', token);
 
   // Handle disconnection
   socket.on('disconnect', () => {
@@ -115,11 +115,10 @@ io.on('connection', (socket) => {
 // Handle change stream events
 const changeStream = Orders.watch();
 
-changeStream.on('change', async (change) => {
+changeStream.on('change', async (data) => {
   if (token) {
     // Perform actions using the token
-    console.log('Token available:', token);
-    NewOrdersDisplay(token)
+    NewOrdersDisplay(token,data)
   } else {
     console.log('Token not available. Waiting for connection...');
   }

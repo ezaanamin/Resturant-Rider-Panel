@@ -134,32 +134,52 @@ async function monitorNewOrder(userId) {
 
 
 
-export const NewOrdersDisplay = async (token) => {
+export const NewOrdersDisplay = async (token,data) => {
 
-  console.log("NewOrdersDisplay function called");
+  let user_id;
+  const token_key = process.env.TOKEN_KEY;
+let customer_information={};
+let order_detail=[]
+  jwt.verify(token,token_key,(error,decode)=>{
+
+    if(decode)
+    {
+
+      user_id=decode.user_id
+    }
+
+  })
   try {
-    const userId = await authorizeToken(token); // Call authorizeToken function with authorization header from request
 
-    if (userId) {
+    if (user_id) {
       try {
         const fullDocument = await Orders.findOne({ _id: data.documentKey._id });
-        if (fullDocument && fullDocument.rider.equals(userId)) { // Assuming userId is the ID extracted from the token
-          Orders.findById(data.documentKey._id).then((doc) => {
+        if (fullDocument && fullDocument.rider.equals(user_id)) { 
+          Orders.findById(data.documentKey._id)  .populate('customer_id')   .then((doc,err) => {
             if (doc) {
-              // console.log(doc);
+              customer_information['order_number']=doc.order_id;
+              customer_information['customer_name']=doc.customer_id.name;
+              customer_information['address']=doc.customer_id.address;
+              customer_information['status']=doc.status
+              order_detail.push(customer_information)
+              console.log(order_detail)
+              io.emit('new_order',order_detail);
+            }
+            if(err)
+            {
+              console.log(err)
             }
           });
         }
       } catch (error) {
         console.error('Error retrieving full document:', error);
       }
-      // res.json(doc);
+
     } else {
       console.log("not login")
     }
   } catch (error) {
     console.error('Error in NewOrdersDisplay:', error);
-    res.status(500).json({ error: "Internal server error" });
   }
 }
 
